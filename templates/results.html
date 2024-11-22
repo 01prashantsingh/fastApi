@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Log Records</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fetched Log Records</h1>
+    <table>
+        <tr>
+            <th>Log Time</th>
+            <th>Point ID</th>
+            <th>Value</th>
+            <th>Quality</th>
+        </tr>
+        {% for record in records %}
+        <tr>
+            <td>{{ record.LOG_TIME_d }}</td>
+            <td>{{ record.POINT_ID }}</td>
+            <td>{{ record.VALUE }}</td>
+            <td>{{ record.QUALITY }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/">Back to Form</a>
+</body>
+</html>

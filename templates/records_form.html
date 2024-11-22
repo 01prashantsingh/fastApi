@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Log Records Query</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        form {
+            background-color: #f4f4f4;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        input[type="text"], input[type="datetime-local"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+             padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div style="max-width: 500px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+        <h1 style="text-align: center; color: #333;">Pilot Records</h1>
+        <br>
+
+        <form id="recordsForm" style="background-color: #f4f4f4; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="margin-bottom: 15px;">
+                <label for="point_prefix" style="display: block; margin-bottom: 5px;">Pilots:</label>
+                <select
+                    style="
+                        width: 100%;
+                        padding: 10px;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        font-size: 16px;
+                        height: 40px;
+                    "
+                    id="point_prefix"
+                    name="point_prefix"
+                    required
+                >
+                    <option value="">Select Pilot</option>
+                    <option value="P1">P1</option>
+                    <option value="P2">P2</option>
+                    <option value="P3">P3</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="start_time" style="display: block; margin-bottom: 5px;">Start Time:</label>
+                <input
+                    type="datetime-local"
+                    id="start_time"
+                    name="start_time"
+                    style="
+                        width: 100%;
+                        padding: 10px;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        font-size: 16px;
+                        height: 40px;
+                    "
+                >
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="end_time" style="display: block; margin-bottom: 5px;">End Time:</label>
+                <input
+                    type="datetime-local"
+                    id="end_time"
+                    name="end_time"
+                    style="
+                        width: 100%;
+                        padding: 10px;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        font-size: 16px;
+                        height: 40px;
+                    "
+                >
+            </div>
+
+            <button
+                type="submit"
+                style="
+                    width: 100%;
+                    padding: 10px;
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                "
+                onmouseover="this.style.backgroundColor='#45a049'"
+                onmouseout="this.style.backgroundColor='#4CAF50'"
+            >
+                Fetch Records
+            </button>
+        </form>
+
+        <div
+            id="result"
+            style="
+                margin-top: 20px;
+                padding: 15px;
+                background-color: #f9f9f9;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                max-height: 400px;
+                overflow-y: auto;
+            "
+        ></div>
+    </div>
+
+    <script>
+        document.getElementById('recordsForm').onsubmit = function(event) {
+            event.preventDefault();
+
+            // Get form values
+            const pointPrefix = document.getElementById('point_prefix').value;
+            const startTimeInput = document.getElementById('start_time').value;
+            const endTimeInput = document.getElementById('end_time').value;
+            const resultDiv = document.getElementById('result');
+
+            // Validate inputs
+            if (!pointPrefix) {
+                resultDiv.innerHTML = `
+                    <div style="color: red; text-align: center;">
+                        Please select a Point Prefix
+                    </div>
+                `;
+                return;
+            }
+
+            // Validate date range
+            if (startTimeInput && endTimeInput && new Date(startTimeInput) > new Date(endTimeInput)) {
+                resultDiv.innerHTML = `
+                    <div style="color: red; text-align: center;">
+                        Start time must be before end time
+                    </div>
+                `;
+                return;
+            }
+
+            // Convert datetime to ISO format
+            const formatDateTime = (dateTimeLocal) => {
+                if (!dateTimeLocal) return null;
+                const date = new Date(dateTimeLocal);
+                return date.toISOString();
+            };
+
+            const startTime = formatDateTime(startTimeInput);
+            const endTime = formatDateTime(endTimeInput);
+
+            // Construct URL with encoded parameters
+            const url = `/records/${pointPrefix}?` +
+                (startTime ? `start_time=${encodeURIComponent(startTime)}&` : '') +
+                (endTime ? `end_time=${encodeURIComponent(endTime)}` : '');
+
+            // Show loading indicator
+            resultDiv.innerHTML = `
+                <div style="text-align: center; color: #666;">
+                    Loading records...
+                    <div style="display: inline-block; margin-left: 10px;">
+                        &#9696;
+                    </div>
+                </div>
+            `;
+
+            // Fetch records
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Check if records exist
+                    if (data.records && data.records.length > 0) {
+                        resultDiv.innerHTML = `
+                            <h3 style="color: green; text-align: center;">
+                                Records Found: ${data.records.length}
+                            </h3>
+                            <pre style="white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 10px; border-radius: 4px;">
+                                ${JSON.stringify(data, null, 2)}
+                            </pre>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div style="text-align: center; color: #666;">
+                                <h3>No Records Found</h3>
+                                <p>Try adjusting your search criteria.</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching records:', error);
+                    resultDiv.innerHTML = `
+                        <div style="color: red; text-align: center;">
+                            <h3>Error Fetching Records</h3>
+                            <p>${error.message}</p>
+                        </div>
+                    `;
+                });
+        };
+
+        // Set default times on page load
+        window.onload = function() {
+            const now = new Date();
+            const formatDate = (date) => {
+                return date.toISOString().slice(0, 16);
+            };
+
+            document.getElementById('start_time').value = formatDate(now);
+            document.getElementById('end_time').value = formatDate(now);
+        };
+    </script>
+</body>
+</html>
